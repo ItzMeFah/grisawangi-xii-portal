@@ -6,7 +6,6 @@ export const runtime = "edge";
 type RecordItem = { id: string; nama: string; kelas: string; nisnAkhir: string; dobSalt: string; dobHash: string; iv: string; nisnCiphertext: string; tag: string };
 const records = roster as RecordItem[];
 const fromBase64 = (value: string) => Uint8Array.from(atob(value), c => c.charCodeAt(0));
-const toBase64 = (value: Uint8Array) => btoa(String.fromCharCode(...value));
 
 async function hashBirthDate(date: string, salt: Uint8Array) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(date), "PBKDF2", false, ["deriveBits"]);
@@ -17,9 +16,11 @@ async function hashBirthDate(date: string, salt: Uint8Array) {
 export async function POST(request: NextRequest) {
   let body: { id?: unknown; dob?: unknown };
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Permintaan tidak valid." }, { status: 400 }); }
-  if (typeof body.id !== "string" || typeof body.dob !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.dob)) {
-    return NextResponse.json({ error: "Isi tanggal lahir dengan benar." }, { status: 400 });
+  if (typeof body.id !== "string" || typeof body.dob !== "string" || !/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(body.dob)) {
+    return NextResponse.json({ error: "Pilih bulan dan tanggal lahir dengan benar." }, { status: 400 });
   }
+  const [month, day] = body.dob.split("-").map(Number);
+  if (day > new Date(2000, month, 0).getDate()) return NextResponse.json({ error: "Tanggal tersebut tidak ada di bulan pilihan." }, { status: 400 });
   const student = records.find(item => item.id === body.id);
   if (!student) return NextResponse.json({ error: "Nama tidak ditemukan." }, { status: 404 });
   let actual: Uint8Array;

@@ -182,7 +182,8 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
   const [query, setQuery] = useState("");
   const [matches, setMatches] = useState<StudentMatch[]>([]);
   const [selected, setSelected] = useState<StudentMatch | null>(null);
-  const [dob, setDob] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthDay, setBirthDay] = useState("");
   const [verified, setVerified] = useState<AuthStudent | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -197,11 +198,12 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
     const timer = setTimeout(() => fetch(`/api/student/search?q=${encodeURIComponent(query.trim())}`, { signal: abort.signal }).then(r => r.ok ? r.json() : { students: [] }).then(d => setMatches(d.students ?? [])).catch(() => {}), 180);
     return () => { clearTimeout(timer); abort.abort(); };
   }, [query, selected]);
-  const choose = (s: StudentMatch) => { setSelected(s); setQuery(s.nama); setVerified(null); setDob(""); setMessage(""); };
+  const choose = (s: StudentMatch) => { setSelected(s); setQuery(s.nama); setVerified(null); setBirthMonth(""); setBirthDay(""); setMessage(""); };
   const verifyDob = async () => {
-    if (!selected || !dob) return setMessage("Pilih nama dan isi tanggal lahir dulu.");
+    if (!selected || !birthMonth || !birthDay) return setMessage("Pilih bulan dan tanggal lahir dulu.");
     setBusy(true); setMessage("");
     try {
+      const dob = `${birthMonth.padStart(2,"0")}-${birthDay.padStart(2,"0")}`;
       const response = await fetch("/api/student/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: selected.id, dob }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Tanggal lahir belum cocok. Coba lagi.");
@@ -242,7 +244,7 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
       </div>
       {selected&&<div className="auth-selected"><span className="auth-selected-check"><Check size={15}/></span><span><small>IDENTITAS DIPILIH</small><b>{selected.nama}</b><em>{selected.kelas} <i/> NISN •••• {selected.nisnAkhir}</em></span><button type="button" onClick={()=>{setSelected(null);setVerified(null);setQuery("");}} aria-label="Ganti nama"><X size={15}/></button></div>}
       {selected&&!verified&&accounts[selected.id]&&<><div className="auth-field"><label htmlFor="returning-password">Password</label><div className="auth-input-wrap"><ShieldCheck size={18}/><input id="returning-password" type="password" autoComplete="current-password" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} placeholder="Password akunmu"/></div></div><button className="auth-submit" type="button" disabled={busy} onClick={signIn}>{busy?"Memeriksa…":"Masuk ke ruang angkatan"}<ArrowRight size={18}/></button><button className="auth-text-button" type="button" onClick={()=>setMessage("Gunakan perangkat tempat akun ini pertama kali diaktifkan, atau hubungi panitia untuk reset password.")}>Lupa password?</button></>}
-      {selected&&!verified&&!accounts[selected.id]&&<><div className="auth-field"><label htmlFor="birth-date">Tanggal lahir <span>untuk verifikasi pertama kali</span></label><div className="auth-input-wrap"><CalendarDays size={18}/><input id="birth-date" type="date" value={dob} onChange={e=>setDob(e.target.value)}/></div></div><button className="auth-submit" type="button" disabled={busy} onClick={verifyDob}>{busy?"Memverifikasi…":"Verifikasi identitas"}<ArrowRight size={18}/></button></>}
+      {selected&&!verified&&!accounts[selected.id]&&<><div className="auth-field"><label>Tanggal lahir <span>untuk verifikasi pertama kali · tahun tidak perlu</span></label><div className="auth-birth-row"><div className="auth-input-wrap"><CalendarDays size={17}/><select aria-label="Bulan lahir" value={birthMonth} onChange={e=>{setBirthMonth(e.target.value);setBirthDay("");}}><option value="">Bulan</option>{["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((month,i)=><option key={month} value={String(i+1)}>{month}</option>)}</select></div><div className="auth-input-wrap"><span className="birth-day-icon">#</span><select aria-label="Tanggal lahir" value={birthDay} onChange={e=>setBirthDay(e.target.value)} disabled={!birthMonth}><option value="">Tanggal</option>{Array.from({length:birthMonth?new Date(2000,Number(birthMonth),0).getDate():0},(_,i)=>String(i+1)).map(day=><option key={day} value={day}>{day}</option>)}</select></div></div></div><button className="auth-submit" type="button" disabled={busy} onClick={verifyDob}>{busy?"Memverifikasi…":"Verifikasi identitas"}<ArrowRight size={18}/></button></>}
       {verified&&<div className="auth-password-step"><div className="auth-verified"><Check size={16}/><span>Identitas terverifikasi</span><small>{verified.nama} · {verified.kelas}<br/>NISN: {verified.nisn}</small></div><label className="auth-field"><span>Password baru</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimal 8 karakter"/></div></label><label className="auth-field"><span>Konfirmasi password</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Ulangi password"/></div></label><button className="auth-submit" type="button" onClick={activate}>Simpan & masuk <ArrowRight size={18}/></button><small className="auth-local-note">Akun password tersimpan di perangkat ini.</small></div>}
       {message&&<div className={`auth-message ${verified?"success":""}`} role="status">{message}</div>}
       <div className="auth-divider"><span>GRISAWANGI · XII</span></div><p className="auth-privacy"><ShieldCheck size={14}/> Data tanggal lahir digunakan hanya untuk verifikasi awal.</p>
