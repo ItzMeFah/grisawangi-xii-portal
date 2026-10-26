@@ -97,8 +97,6 @@ function usePortalData() {
 export default function Portal({ page }: { page: "home" | "event" | "profile" | "admin" }) {
   const path = usePathname();
   const { data, setData, student, setStudent, ready } = usePortalData();
-  const [loginName, setLoginName] = useState("");
-  const [nisn, setNisn] = useState("");
   const [toast, setToast] = useState("");
   const [adminTab, setAdminTab] = useState("Ringkasan");
   const [activeSlide, setActiveSlide] = useState(0);
@@ -122,12 +120,7 @@ export default function Portal({ page }: { page: "home" | "event" | "profile" | 
   useEffect(() => { setNewAnnouncement(data.announcement); setMenuDraft(data.menus.join("\n")); setEventDraft(data.events); }, [data]);
 
   if (!ready) return <main className="loading"><span className="brand-mark">G</span><p>Menyiapkan ruang angkatan…</p></main>;
-  if (!student && !isAdmin) return <Login name={loginName} setName={setLoginName} nisn={nisn} setNisn={setNisn} onSubmit={() => {
-    const found = studentRows.find(s => s.nama.toLowerCase() === loginName.trim().toLowerCase());
-    if (!found) return setToast("Pilih nama yang tersedia dari daftar.");
-    if (!/^\d{10}$/.test(nisn)) return setToast("NISN harus berisi 10 angka.");
-    setStudent(found); setToast(`Hai, ${found.nama.split(" ")[0]}!`);
-  }} />;
+  if (!student && !isAdmin) return <Login onSubmit={s => { setStudent(s); setToast(`Hai, ${s.nama.split(" ")[0]}!`); }} />;
 
   const toggleGate = (key: FeatureKey) => setData(d => ({ ...d, gates: { ...d.gates, [key]: { ...d.gates[key], open: !d.gates[key].open } } }));
   const savePayment = (amount = 100000) => {
@@ -176,10 +169,85 @@ export default function Portal({ page }: { page: "home" | "event" | "profile" | 
   </div>;
 }
 
-function Login({ name, setName, nisn, setNisn, onSubmit }: { name: string; setName: (v: string) => void; nisn: string; setNisn: (v: string) => void; onSubmit: () => void }) {
-  return <main className="login-page"><div className="login-visual"><Link href="/" className="wordmark light"><span className="brand-mark">G</span><span><b>GRISAWANGI</b><small>SMK PGRI 1 Giri Banyuwangi</small></span></Link><div className="login-copy"><span className="eyebrow">RUANG ANGKATAN XII</span><h1>Satu angkatan.<br/><em>Banyak cerita.</em></h1><p>Voting konsep, persiapan event, dan kabar terbaru angkatan—semua dalam satu ruang.</p><div className="float-cards"><span>✳ foto angkatan</span><span>↗ jalan sehat</span><span>♥ cerita kita</span></div></div><div className="login-orbit"/><span className="login-school">BANYUWANGI · 2026</span></div>
-    <section className="login-form-wrap"><form className="login-card" onSubmit={e => { e.preventDefault(); onSubmit(); }}><div className="avatar large">XII</div><span className="eyebrow violet">PORTAL SISWA</span><h2>Masuk, yuk.</h2><p className="muted">Gunakan data diri untuk masuk ke ruang kelasmu.</p><label>Nama lengkap<select required value={name} onChange={e => setName(e.target.value)}><option value="">Pilih nama kamu</option>{studentRows.map((s,i) => <option key={`${s.nama}-${i}`} value={s.nama}>{s.nama} · {s.kelas}</option>)}</select></label><label>NISN<input required inputMode="numeric" maxLength={10} value={nisn} onChange={e => setNisn(e.target.value.replace(/\D/g,""))} placeholder="Masukkan 10 digit NISN"/></label><div className="notice"><ShieldCheck size={17}/><span>Mode pratinjau: NISN belum dicocokkan dengan sistem sekolah. Jangan gunakan NISN asli di situs demo ini.</span></div><button className="button primary wide" type="submit">Masuk ke portal <ArrowRight size={17}/></button><small className="login-caption">Data siswa mengikuti roster XII yang tersedia.</small></form></section>
-  </main>;
+type AuthStudent = Student & { id: string; nisn?: string };
+type StudentMatch = { id: string; nama: string; kelas: string; nisnAkhir: string };
+const AUTH_KEY = `${KEY}:accounts`;
+async function passwordDigest(password: string, saltText: string) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: encoder.encode(saltText), iterations: 160000, hash: "SHA-256" }, key, 256);
+  return Array.from(new Uint8Array(bits), b => b.toString(16).padStart(2, "0")).join("");
+}
+function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
+  const [query, setQuery] = useState("");
+  const [matches, setMatches] = useState<StudentMatch[]>([]);
+  const [selected, setSelected] = useState<StudentMatch | null>(null);
+  const [dob, setDob] = useState("");
+  const [verified, setVerified] = useState<AuthStudent | null>(null);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [accounts, setAccounts] = useState<Record<string, { salt: string; hash: string }>>({});
+  useEffect(() => { try { setAccounts(JSON.parse(localStorage.getItem(AUTH_KEY) || "{}")); } catch { setAccounts({}); } }, []);
+  useEffect(() => {
+    if (query.trim().length < 2 || selected) { setMatches([]); return; }
+    const abort = new AbortController();
+    const timer = setTimeout(() => fetch(`/api/student/search?q=${encodeURIComponent(query.trim())}`, { signal: abort.signal }).then(r => r.ok ? r.json() : { students: [] }).then(d => setMatches(d.students ?? [])).catch(() => {}), 180);
+    return () => { clearTimeout(timer); abort.abort(); };
+  }, [query, selected]);
+  const choose = (s: StudentMatch) => { setSelected(s); setQuery(s.nama); setVerified(null); setDob(""); setMessage(""); };
+  const verifyDob = async () => {
+    if (!selected || !dob) return setMessage("Pilih nama dan isi tanggal lahir dulu.");
+    setBusy(true); setMessage("");
+    try {
+      const response = await fetch("/api/student/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: selected.id, dob }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Tanggal lahir belum cocok. Coba lagi.");
+      setVerified(result.student);
+      setMessage("Identitas cocok. Buat password untuk akunmu.");
+    } catch (err) { setMessage(err instanceof Error ? err.message : "Verifikasi gagal. Coba lagi."); }
+    finally { setBusy(false); }
+  };
+  const activate = async () => {
+    if (!verified) return;
+    if (password.length < 8) return setMessage("Password minimal 8 karakter.");
+    if (password !== confirm) return setMessage("Konfirmasi password belum sama.");
+    const salt = crypto.randomUUID();
+    const hash = await passwordDigest(password, salt);
+    const updated = { ...accounts, [verified.id]: { salt, hash } };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(updated)); setAccounts(updated);
+    const student = { id: verified.id, nama: verified.nama, kelas: verified.kelas };
+    setVerified(null); setDob(""); onSubmit(student);
+  };
+  const signIn = async () => {
+    if (!selected) return;
+    const account = accounts[selected.id];
+    if (!account) return setMessage("Akun belum dibuat di perangkat ini. Verifikasi tanggal lahir dulu.");
+    setBusy(true);
+    try {
+      const hash = await passwordDigest(loginPassword, account.salt);
+      if (hash !== account.hash) return setMessage("Password kurang tepat.");
+      onSubmit({ id: selected.id, nama: selected.nama, kelas: selected.kelas });
+    } finally { setBusy(false); }
+  };
+  return <main className="auth-screen"><div className="auth-glow auth-glow-a"/><div className="auth-glow auth-glow-b"/><section className="auth-card">
+    <div className="auth-brand"><span className="auth-brand-mark">G</span><span><b>GRISAWANGI</b><small>SMK PGRI 1 Giri Banyuwangi</small></span><span className="auth-year">XII · 2026</span></div>
+    <div className="auth-art"><div className="auth-art-orbit"/><span className="auth-star star-one">✦</span><span className="auth-star star-two">✳</span><div className="auth-art-copy"><span className="auth-art-kicker">ANGKATAN KITA</span><strong>Satu frame.<br/>Seribu cerita.</strong><span>Semua momen terakhir kita, dimulai di sini.</span></div><div className="auth-sticker">the<br/><b>last<br/>chapter</b><i>✷</i></div><div className="auth-art-bottom"><span>✺</span> BARENG-BARENG JADI KENANGAN</div></div>
+    <div className="auth-content"><div className="auth-step"><span className="auth-step-icon"><CircleUserRound size={17}/></span><span><b>Ruang siswa</b><small>Akses personal untuk angkatan XII</small></span><ShieldCheck size={17} className="auth-shield"/></div>
+      <h1>Masuk, yuk.</h1><p className="auth-subtitle">Cari namamu untuk mulai.</p>
+      <div className="auth-field"><label htmlFor="student-search">Nama lengkap</label><div className="auth-input-wrap"><CircleUserRound size={18}/><input id="student-search" autoComplete="off" value={query} onChange={e => { setQuery(e.target.value); setSelected(null); setVerified(null); setMessage(""); }} placeholder="Ketik nama kamu…"/><button type="button" className="auth-clear" aria-label="Hapus nama" onClick={()=>{setQuery("");setSelected(null);setVerified(null);}}>{selected&&<X size={16}/>}</button></div>
+      {matches.length>0&&<div className="auth-results">{matches.map(s=><button type="button" key={s.id} onClick={()=>choose(s)} className="auth-result"><span className="result-avatar">{s.nama.trim().slice(0,1)}</span><span><b>{s.nama}</b><small>{s.kelas} · NISN •••• {s.nisnAkhir}</small></span><ChevronRight size={17}/></button>)}</div>}
+      </div>
+      {selected&&<div className="auth-selected"><span className="auth-selected-check"><Check size={15}/></span><span><small>IDENTITAS DIPILIH</small><b>{selected.nama}</b><em>{selected.kelas} <i/> NISN •••• {selected.nisnAkhir}</em></span><button type="button" onClick={()=>{setSelected(null);setVerified(null);setQuery("");}} aria-label="Ganti nama"><X size={15}/></button></div>}
+      {selected&&!verified&&accounts[selected.id]&&<><div className="auth-field"><label htmlFor="returning-password">Password</label><div className="auth-input-wrap"><ShieldCheck size={18}/><input id="returning-password" type="password" autoComplete="current-password" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} placeholder="Password akunmu"/></div></div><button className="auth-submit" type="button" disabled={busy} onClick={signIn}>{busy?"Memeriksa…":"Masuk ke ruang angkatan"}<ArrowRight size={18}/></button><button className="auth-text-button" type="button" onClick={()=>setMessage("Gunakan perangkat tempat akun ini pertama kali diaktifkan, atau hubungi panitia untuk reset password.")}>Lupa password?</button></>}
+      {selected&&!verified&&!accounts[selected.id]&&<><div className="auth-field"><label htmlFor="birth-date">Tanggal lahir <span>untuk verifikasi pertama kali</span></label><div className="auth-input-wrap"><CalendarDays size={18}/><input id="birth-date" type="date" value={dob} onChange={e=>setDob(e.target.value)}/></div></div><button className="auth-submit" type="button" disabled={busy} onClick={verifyDob}>{busy?"Memverifikasi…":"Verifikasi identitas"}<ArrowRight size={18}/></button></>}
+      {verified&&<div className="auth-password-step"><div className="auth-verified"><Check size={16}/><span>Identitas terverifikasi</span><small>{verified.nama} · {verified.kelas}<br/>NISN: {verified.nisn}</small></div><label className="auth-field"><span>Password baru</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimal 8 karakter"/></div></label><label className="auth-field"><span>Konfirmasi password</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Ulangi password"/></div></label><button className="auth-submit" type="button" onClick={activate}>Simpan & masuk <ArrowRight size={18}/></button><small className="auth-local-note">Akun password tersimpan di perangkat ini.</small></div>}
+      {message&&<div className={`auth-message ${verified?"success":""}`} role="status">{message}</div>}
+      <div className="auth-divider"><span>GRISAWANGI · XII</span></div><p className="auth-privacy"><ShieldCheck size={14}/> Data tanggal lahir digunakan hanya untuk verifikasi awal.</p>
+    </div>
+  </section><p className="auth-footer">BANYUWANGI <i/> SATU ANGKATAN, BANYAK CERITA</p></main>;
 }
 
 function Home({ data, paid, totalVotes, slide, vote, chooseVote }: { data: PortalData; paid: number; totalVotes: number; slide: number; vote?: number; chooseVote: (i:number)=>void }) {
