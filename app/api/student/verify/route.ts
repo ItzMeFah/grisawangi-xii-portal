@@ -10,7 +10,7 @@ const toBase64 = (value: Uint8Array) => btoa(String.fromCharCode(...value));
 
 async function hashBirthDate(date: string, salt: Uint8Array) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(date), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" }, key, 256);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, key, 256);
   return new Uint8Array(bits);
 }
 
@@ -22,7 +22,9 @@ export async function POST(request: NextRequest) {
   }
   const student = records.find(item => item.id === body.id);
   if (!student) return NextResponse.json({ error: "Nama tidak ditemukan." }, { status: 404 });
-  const actual = await hashBirthDate(body.dob, fromBase64(student.dobSalt));
+  let actual: Uint8Array;
+  try { actual = await hashBirthDate(body.dob, fromBase64(student.dobSalt)); }
+  catch { return NextResponse.json({ error: "Verifikasi sedang bermasalah. Coba lagi nanti." }, { status: 503 }); }
   const expected = fromBase64(student.dobHash);
   let diff = actual.length ^ expected.length;
   for (let i = 0; i < Math.max(actual.length, expected.length); i++) diff |= (actual[i] ?? 0) ^ (expected[i] ?? 0);

@@ -203,7 +203,7 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
     setBusy(true); setMessage("");
     try {
       const response = await fetch("/api/student/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: selected.id, dob }) });
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Tanggal lahir belum cocok. Coba lagi.");
       setVerified(result.student);
       setMessage("Identitas cocok. Buat password untuk akunmu.");
