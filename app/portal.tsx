@@ -29,6 +29,8 @@ type PortalData = {
 };
 
 const KEY = "grissawangi-xii-portal-demo-v1";
+const DEMO_ID = "demo";
+const DEMO_PASSWORD = "grisawangi2026";
 const DEFAULT: PortalData = {
   announcement: "Selamat datang di ruang persiapan angkatan. Pilih konsep, cek tagihan, dan simpan kebutuhan konsumsi kamu.",
   invoiceTotal: 300000,
@@ -172,6 +174,7 @@ export default function Portal({ page }: { page: "home" | "event" | "profile" | 
 type AuthStudent = Student & { id: string; nisn?: string };
 type StudentMatch = { id: string; nama: string; kelas: string; nisnAkhir: string };
 const AUTH_KEY = `${KEY}:accounts`;
+const DEMO_STUDENT: AuthStudent = { id: "demo-student", nama: "Siswa Demo", kelas: "XII Demo" };
 async function passwordDigest(password: string, saltText: string) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
@@ -188,6 +191,9 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [demoUsername, setDemoUsername] = useState("");
+  const [demoPassword, setDemoPassword] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [accounts, setAccounts] = useState<Record<string, { salt: string; hash: string }>>({});
@@ -221,7 +227,7 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
     const updated = { ...accounts, [verified.id]: { salt, hash } };
     localStorage.setItem(AUTH_KEY, JSON.stringify(updated)); setAccounts(updated);
     const student = { id: verified.id, nama: verified.nama, kelas: verified.kelas };
-    setVerified(null); setDob(""); onSubmit(student);
+    setVerified(null); setBirthMonth(""); setBirthDay(""); onSubmit(student);
   };
   const signIn = async () => {
     if (!selected) return;
@@ -233,6 +239,10 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
       if (hash !== account.hash) return setMessage("Password kurang tepat.");
       onSubmit({ id: selected.id, nama: selected.nama, kelas: selected.kelas });
     } finally { setBusy(false); }
+  };
+  const signInDemo = () => {
+    if (demoUsername.trim() !== DEMO_ID || demoPassword !== DEMO_PASSWORD) return setMessage("ID atau password akun demo belum cocok.");
+    setMessage(""); onSubmit(DEMO_STUDENT);
   };
   return <main className="auth-screen"><div className="auth-glow auth-glow-a"/><div className="auth-glow auth-glow-b"/><section className="auth-card">
     <div className="auth-brand"><span className="auth-brand-mark">G</span><span><b>GRISAWANGI</b><small>SMK PGRI 1 Giri Banyuwangi</small></span><span className="auth-year">XII · 2026</span></div>
@@ -247,6 +257,8 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
       {selected&&!verified&&!accounts[selected.id]&&<><div className="auth-field"><label>Tanggal lahir <span>untuk verifikasi pertama kali · tahun tidak perlu</span></label><div className="auth-birth-row"><div className="auth-input-wrap"><CalendarDays size={17}/><select aria-label="Bulan lahir" value={birthMonth} onChange={e=>{setBirthMonth(e.target.value);setBirthDay("");}}><option value="">Bulan</option>{["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((month,i)=><option key={month} value={String(i+1)}>{month}</option>)}</select></div><div className="auth-input-wrap"><span className="birth-day-icon">#</span><select aria-label="Tanggal lahir" value={birthDay} onChange={e=>setBirthDay(e.target.value)} disabled={!birthMonth}><option value="">Tanggal</option>{Array.from({length:birthMonth?new Date(2000,Number(birthMonth),0).getDate():0},(_,i)=>String(i+1)).map(day=><option key={day} value={day}>{day}</option>)}</select></div></div></div><button className="auth-submit" type="button" disabled={busy} onClick={verifyDob}>{busy?"Memverifikasi…":"Verifikasi identitas"}<ArrowRight size={18}/></button></>}
       {verified&&<div className="auth-password-step"><div className="auth-verified"><Check size={16}/><span>Identitas terverifikasi</span><small>{verified.nama} · {verified.kelas}<br/>NISN: {verified.nisn}</small></div><label className="auth-field"><span>Password baru</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimal 8 karakter"/></div></label><label className="auth-field"><span>Konfirmasi password</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Ulangi password"/></div></label><button className="auth-submit" type="button" onClick={activate}>Simpan & masuk <ArrowRight size={18}/></button><small className="auth-local-note">Akun password tersimpan di perangkat ini.</small></div>}
       {message&&<div className={`auth-message ${verified?"success":""}`} role="status">{message}</div>}
+      <button type="button" className="auth-demo-toggle" onClick={()=>setDemoOpen(v=>!v)}>{demoOpen?"Tutup akun demo":"Coba masuk dengan akun demo"}<ChevronRight size={15}/></button>
+      {demoOpen&&<section className="auth-demo-card"><div className="auth-demo-head"><span>DEMO</span><b>Akun pratinjau</b></div><p>Akun fiktif untuk melihat tampilan portal. Bukan data siswa.</p><label className="auth-field"><span>ID demo</span><div className="auth-input-wrap"><CircleUserRound size={17}/><input autoComplete="username" value={demoUsername} onChange={e=>setDemoUsername(e.target.value)} placeholder="demo"/></div></label><label className="auth-field"><span>Password demo</span><div className="auth-input-wrap"><ShieldCheck size={17}/><input type="password" autoComplete="current-password" value={demoPassword} onChange={e=>setDemoPassword(e.target.value)} placeholder="Masukkan password demo"/></div></label><button className="auth-submit" type="button" onClick={signInDemo}>Masuk akun demo <ArrowRight size={18}/></button><small className="auth-demo-hint">ID: <b>demo</b> · Password: <b>grisawangi2026</b></small></section>}
       <div className="auth-divider"><span>GRISAWANGI · XII</span></div><p className="auth-privacy"><ShieldCheck size={14}/> Data tanggal lahir digunakan hanya untuk verifikasi awal.</p>
     </div>
   </section><p className="auth-footer">BANYUWANGI <i/> SATU ANGKATAN, BANYAK CERITA</p></main>;
