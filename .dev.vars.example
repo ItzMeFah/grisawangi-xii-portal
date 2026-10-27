@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local development; keep the real value out of Git.
+PRIVATE_ROSTER_KEY=replace-with-the-private-roster-key
