@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import roster from "../../../../data/private-students.json";
 
 export const runtime = "edge";
-type RecordItem = { id: string; nama: string; kelas: string; nisnAkhir: string; dobSalt: string; dobHash: string; iv: string; nisnCiphertext: string; tag: string };
+type RecordItem = { id: string; nama: string; kelas: string; nisnAkhir: string; dobSalt?: string; dobHash?: string; dobIv?: string; dobCiphertext?: string; dobTag?: string; iv: string; nisnCiphertext: string; tag: string };
 const records = roster as RecordItem[];
 const fromBase64 = (value: string) => Uint8Array.from(atob(value), c => c.charCodeAt(0));
 
@@ -23,18 +23,26 @@ export async function POST(request: NextRequest) {
   if (day > new Date(2000, month, 0).getDate()) return NextResponse.json({ error: "Tanggal tersebut tidak ada di bulan pilihan." }, { status: 400 });
   const student = records.find(item => item.id === body.id);
   if (!student) return NextResponse.json({ error: "Nama tidak ditemukan." }, { status: 404 });
-  let actual: Uint8Array;
-  try { actual = await hashBirthDate(body.dob, fromBase64(student.dobSalt)); }
-  catch { return NextResponse.json({ error: "Verifikasi sedang bermasalah. Coba lagi nanti." }, { status: 503 }); }
-  const expected = fromBase64(student.dobHash);
-  let diff = actual.length ^ expected.length;
-  for (let i = 0; i < Math.max(actual.length, expected.length); i++) diff |= (actual[i] ?? 0) ^ (expected[i] ?? 0);
-  if (diff !== 0) return NextResponse.json({ error: "Tanggal lahir belum cocok. Periksa lagi ya." }, { status: 401 });
-
   const secret = (env as unknown as { PRIVATE_ROSTER_KEY?: string }).PRIVATE_ROSTER_KEY;
   if (!secret) return NextResponse.json({ error: "Verifikasi sedang disiapkan. Coba beberapa saat lagi." }, { status: 503 });
   try {
     const key = await crypto.subtle.importKey("raw", fromBase64(secret), "AES-GCM", false, ["decrypt"]);
+    if (student.dobIv && student.dobCiphertext && student.dobTag) {
+      const encryptedDob = new Uint8Array([...fromBase64(student.dobCiphertext), ...fromBase64(student.dobTag)]);
+      const plainDob = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(student.dobIv) }, key, encryptedDob);
+      if (new TextDecoder().decode(plainDob) !== body.dob) return NextResponse.json({ error: "Tanggal lahir belum cocok. Periksa lagi ya." }, { status: 401 });
+    } else if (student.dobSalt && student.dobHash) {
+      let actual: Uint8Array;
+      try { actual = await hashBirthDate(body.dob, fromBase64(student.dobSalt)); }
+      catch { return NextResponse.json({ error: "Verifikasi sedang bermasalah. Coba lagi nanti." }, { status: 503 }); }
+      const expected = fromBase64(student.dobHash);
+      let diff = actual.length ^ expected.length;
+      for (let i = 0; i < Math.max(actual.length, expected.length); i++) diff |= (actual[i] ?? 0) ^ (expected[i] ?? 0);
+      if (diff !== 0) return NextResponse.json({ error: "Tanggal lahir belum cocok. Periksa lagi ya." }, { status: 401 });
+    } else {
+      return NextResponse.json({ error: "Data verifikasi belum tersedia. Hubungi panitia." }, { status: 503 });
+    }
+
     const cipher = new Uint8Array([...fromBase64(student.nisnCiphertext), ...fromBase64(student.tag)]);
     const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(student.iv) }, key, cipher);
     const nisn = new TextDecoder().decode(plain);
