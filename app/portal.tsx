@@ -236,10 +236,13 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
     } finally { setBusy(false); }
   };
   return <main className="auth-screen"><section className="auth-card">
-    <div className="auth-brand"><span><b>GRISAWANGI</b><small>SMK PGRI 1 Giri Banyuwangi</small></span></div>
+    <header className="auth-welcome">
+      <span className="auth-app-icon"><Vote size={28}/></span>
+      <span className="auth-kicker">GRISAWANGI · ANGKATAN XII</span>
+      <h1>Selamat Datang</h1>
+      <p className="auth-subtitle">{!selected?"Masuk untuk memulai aktivitas angkatan.":verified?"Identitas terverifikasi. Buat password untuk akunmu.":accounts[selected.id]?"Masukkan password akunmu untuk melanjutkan.":"Pilih tanggal lahir untuk verifikasi pertama kali."}</p>
+    </header>
     <div className="auth-content">
-      <span className="auth-kicker">PORTAL SISWA · ANGKATAN XII</span>
-      <h1>Masuk ke akunmu</h1><p className="auth-subtitle">{!selected?"Cari nama lengkap, lalu pilih kelasmu.":verified?"Identitas cocok. Buat password untuk akunmu.":accounts[selected.id]?"Masukkan password akunmu untuk melanjutkan.":"Pertama kali masuk? Verifikasi tanggal lahir, lalu buat password."}</p>
       <div className="auth-field"><label htmlFor="student-search">Nama lengkap</label><div className="auth-input-wrap"><CircleUserRound size={18}/><input id="student-search" autoComplete="off" value={query} onChange={e => { setQuery(e.target.value); setSelected(null); setVerified(null); setMessage(""); }} placeholder="Ketik nama kamu…"/><button type="button" className="auth-clear" aria-label="Hapus nama" onClick={()=>{setQuery("");setSelected(null);setVerified(null);}}>{selected&&<X size={16}/>}</button></div>
       {matches.length>0&&<div className="auth-results">{matches.map(s=><button type="button" key={s.id} onClick={()=>choose(s)} className="auth-result"><span className="result-avatar">{s.nama.trim().slice(0,1)}</span><span><b>{s.nama}</b><small>{s.kelas} · NISN •••• {s.nisnAkhir}</small></span><ChevronRight size={17}/></button>)}</div>}
       </div>
@@ -248,8 +251,9 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
       {selected&&!verified&&!accounts[selected.id]&&<><div className="auth-field"><label>Tanggal lahir <span>untuk verifikasi pertama kali · tahun tidak perlu</span></label><div className="auth-birth-row"><div className="auth-input-wrap"><CalendarDays size={17}/><select aria-label="Bulan lahir" value={birthMonth} onChange={e=>{setBirthMonth(e.target.value);setBirthDay("");}}><option value="">Bulan</option>{["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((month,i)=><option key={month} value={String(i+1)}>{month}</option>)}</select></div><div className="auth-input-wrap"><span className="birth-day-icon">#</span><select aria-label="Tanggal lahir" value={birthDay} onChange={e=>setBirthDay(e.target.value)} disabled={!birthMonth}><option value="">Tanggal</option>{Array.from({length:birthMonth?new Date(2000,Number(birthMonth),0).getDate():0},(_,i)=>String(i+1)).map(day=><option key={day} value={day}>{day}</option>)}</select></div></div></div><button className="auth-submit" type="button" disabled={busy} onClick={verifyDob}>{busy?"Memverifikasi…":"Verifikasi identitas"}<ArrowRight size={18}/></button></>}
       {verified&&<div className="auth-password-step"><div className="auth-verified"><Check size={16}/><span>Identitas terverifikasi</span><small>{verified.nama} · {verified.kelas}<br/>NISN: {verified.nisn}</small></div><label className="auth-field"><span>Password baru</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Minimal 8 karakter"/></div></label><label className="auth-field"><span>Konfirmasi password</span><div className="auth-input-wrap"><ShieldCheck size={18}/><input type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Ulangi password"/></div></label><button className="auth-submit" type="button" onClick={activate}>Simpan & masuk <ArrowRight size={18}/></button><small className="auth-local-note">Akun password tersimpan di perangkat ini.</small></div>}
       {message&&<div className={`auth-message ${verified?"success":""}`} role="status">{message}</div>}
-      <p className="auth-privacy"><ShieldCheck size={14}/> Tanggal lahir hanya dipakai untuk verifikasi pertama kali.</p>
+      <p className="auth-privacy"><ShieldCheck size={16}/> Tanggal lahir hanya dipakai untuk verifikasi pertama kali.</p>
     </div>
+    <footer className="auth-install-bar"><span className="auth-install-icon"><ShieldCheck size={22}/></span><span><b>Forum Angkatan XII</b><small>SMK PGRI 1 Giri Banyuwangi</small></span><span className="auth-secure-chip">AKSES AMAN</span></footer>
   </section></main>;
 }
 
@@ -338,3 +342,4 @@ function Admin(props: {
 
 function Metric({icon,label,value,foot}:{icon:React.ReactNode;label:string;value:string;foot:string}){return <div className="admin-metric"><span className="metric-icon">{icon}</span><small>{label}</small><b>{value}</b><span>{foot}</span></div>}
 function AdminHeading({eyebrow,title,sub}:{eyebrow:string;title:string;sub:string}){return <div className="admin-heading"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{sub}</p></div>}
+
