@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowDownRight, ArrowRight, Bell, CalendarDays, Check, ChevronLeft, ChevronRight,
+  ArrowDownRight, ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight,
   CircleUserRound, ClipboardList, Clock3, CreditCard, Home as House, Megaphone,
   Menu, PartyPopper, Search, ShieldCheck, Utensils, Vote, Wallet, X,
 } from "lucide-react";
@@ -30,7 +30,7 @@ type PortalData = {
 
 const KEY = "grissawangi-xii-portal-demo-v1";
 const DEFAULT: PortalData = {
-  announcement: "Selamat datang di ruang persiapan angkatan. Pilih konsep, cek tagihan, dan simpan kebutuhan konsumsi kamu.",
+  announcement: "",
   invoiceTotal: 300000,
   invoiceLines: [
     { name: "Patungan biaya rekaman & drone", amount: 100000 },
@@ -80,7 +80,11 @@ function usePortalData() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(KEY);
-      if (stored) setData({ ...DEFAULT, ...JSON.parse(stored) });
+      if (stored) {
+        const saved = JSON.parse(stored);
+        if (saved.announcement === "Selamat datang di ruang persiapan angkatan. Pilih konsep, cek tagihan, dan simpan kebutuhan konsumsi kamu.") saved.announcement = "";
+        setData({ ...DEFAULT, ...saved });
+      }
       const savedStudent = localStorage.getItem(`${KEY}:student`);
       if (savedStudent) setStudent(JSON.parse(savedStudent));
     } catch { /* start with editable sample data */ }
@@ -150,9 +154,7 @@ export default function Portal({ page }: { page: "home" | "event" | "profile" | 
     <header className="topbar">
       <Link href="/" className="wordmark"><span className="brand-mark">G</span><span><b>GRISAWANGI</b><small>SMK PGRI 1 Giri Banyuwangi</small></span></Link>
       <div className="top-actions">
-        {!isAdmin && <Link className="announcement-mini" href="/event"><Bell size={16}/><span>Info angkatan</span></Link>}
-        {!isAdmin && <Link href="/profile" className="user-pill"><span className="avatar">{student?.nama.slice(0,1)}</span><span className="user-desktop">{student?.nama.split(" ")[0]}</span></Link>}
-        <Link aria-label="Keluar" title="Keluar" className="icon-button exit" href="/" onClick={e => { e.preventDefault(); setStudent(null); setToast("Kamu sudah keluar."); }}><ArrowDownRight size={19}/></Link>
+        {!isAdmin && <Link href="/profile" className="user-pill" aria-label="Buka profil"><span className="avatar">{student?.nama.slice(0,1)}</span><span className="user-desktop">{student?.nama.split(" ")[0]}</span></Link>}
       </div>
     </header>
     {isAdmin ? <Admin data={data} setData={setData} tab={adminTab} setTab={setAdminTab} search={search} setSearch={setSearch} students={filteredStudents} totalVotes={totalVotes} revenue={estimatedRevenue} collected={collected} paymentName={paymentName} setPaymentName={setPaymentName} paymentAmount={paymentAmount} setPaymentAmount={setPaymentAmount} announcement={newAnnouncement} setAnnouncement={setNewAnnouncement} menuDraft={menuDraft} setMenuDraft={setMenuDraft} eventDraft={eventDraft} setEventDraft={setEventDraft} toggleGate={toggleGate} toast={setToast} /> : <main className="main-content">
@@ -258,14 +260,13 @@ function Login({ onSubmit }: { onSubmit: (s: AuthStudent) => void }) {
 }
 
 function Home({ data, paid, totalVotes, slide, vote, chooseVote }: { data: PortalData; paid: number; totalVotes: number; slide: number; vote?: number; chooseVote: (i:number)=>void }) {
-  const headlines = ["Satu angkatan, banyak cerita.", "Bikin momen terakhir jadi berarti.", "Semua suara punya tempat."];
+  const headlines = ["Satu angkatan. Satu cerita.", "Momen terakhir, kita rayakan.", "Pilih konsep bersama."];
   return <>
-    <div className="notice-banner"><Megaphone size={17}/><span><b>Info terbaru</b>{data.announcement}</span><ArrowRight size={16}/></div>
-    <section className="welcome-row"><div><span className="eyebrow">FOTO ANGKATAN · KELAS XII</span><h1>Hai, teman <span>GRISAWANGI.</span></h1><p>Ini ruang kita buat merancang momen yang bakal diingat.</p></div><div className="day-chip"><CalendarDays size={17}/><span>Persiapan angkatan<strong>2026</strong></span></div></section>
-    <section className="feature-hero"><div className="hero-copy"><span className="hero-kicker"><PartyPopper size={15}/> THE LAST CHAPTER</span><h2 key={slide}>{headlines[slide]}</h2><p>Yuk ikut urun suara dan pastikan semua detail acara kita siap bersama.</p><Link href="/event" className="button cream">Lihat persiapan <ArrowRight size={16}/></Link><div className="hero-dots">{headlines.map((_,i)=><button key={i} aria-label={`Slide ${i+1}`} className={slide===i?"active":""}/>)}</div></div><div className="hero-art" aria-hidden="true"><div className="sun"/><div className="arc arc-one"/><div className="arc arc-two"/><span className="sparkle s1">✳</span><span className="sparkle s2">✦</span><div className="art-caption">XII<br/><small>CLASS OF<br/>2026</small></div></div></section>
+    {data.announcement.trim() && <div className="notice-banner"><Megaphone size={17}/><span><b>Pengumuman</b>{data.announcement}</span></div>}
+    <section className="welcome-row"><div><h1>Foto Angkatan <span>XII</span></h1></div></section>
+    <section className="feature-hero"><div className="hero-copy"><span className="hero-kicker"><PartyPopper size={15}/> GRISAWANGI · 2026</span><h2 key={slide}>{headlines[slide]}</h2><Link href="/event" className="button cream">Lihat acara <ArrowRight size={16}/></Link><div className="hero-dots">{headlines.map((_,i)=><button key={i} aria-label={`Slide ${i+1}`} className={slide===i?"active":""}/>)}</div></div><div className="hero-art" aria-hidden="true"><div className="sun"/><div className="arc arc-one"/><div className="arc arc-two"/><span className="sparkle s1">✳</span><span className="sparkle s2">✦</span><div className="art-caption">XII<br/><small>CLASS OF<br/>2026</small></div></div></section>
     <div className="stats-row"><Link href="/event#invoice" className="stat-card"><span className="stat-icon lilac"><Wallet/></span><small>Tagihan kamu</small><strong>{rupiah(Math.max(0,data.invoiceTotal-paid))}</strong><span className="stat-foot">Sisa dari {rupiah(data.invoiceTotal)} <ArrowRight size={13}/></span></Link><Link href="/event#voting" className="stat-card"><span className="stat-icon peach"><Vote/></span><small>Suara masuk</small><strong>{totalVotes} <i>suara</i></strong><span className="stat-foot">Ikut menentukan konsep <ArrowRight size={13}/></span></Link><Link href="/event#rundown" className="stat-card"><span className="stat-icon mint"><Clock3/></span><small>Hari acara</small><strong>06.00 <i>WIB</i></strong><span className="stat-foot">Cek jadwal lengkap <ArrowRight size={13}/></span></Link></div>
-    <section className="section-block" id="voting"><div className="section-heading"><div><span className="eyebrow">PILIHAN TEMAN-TEMAN</span><h2>Konsep foto angkatan</h2></div><Link href="/event#voting" className="text-link">Semua konsep <ChevronRight size={17}/></Link></div><div className="concept-grid">{data.concepts.map((c,i)=><article className={`concept-card concept-${i}`} key={i}><div className="concept-cover"><span className="concept-letter">0{i+1}</span><span className="cover-symbol">{["✳","◒","✦"][i%3]}</span><span className="cover-tag">KONSEP {String.fromCharCode(65+i)}</span></div><div className="concept-body"><h3>{c.name}</h3><p>{c.desc}</p><div className="vote-line"><div className="vote-meter"><i style={{width:`${Math.min(100,(data.votes[String(i)]||0)/Math.max(1,totalVotes)*100)}%`}}/></div><span>{data.votes[String(i)]||0}</span></div><button className={`button vote-button ${vote===i?"chosen":""}`} onClick={()=>chooseVote(i)}>{vote===i?<><Check size={15}/> Pilihanmu</>:<>Pilih konsep <ArrowRight size={15}/></>}</button></div></article>)}</div></section>
-    <section className="home-bottom"><div className="quote-card"><span className="eyebrow">CATATAN PANITIA</span><p>“Yang bikin angkatan berkesan bukan cuma acaranya, tapi karena kita jalanin bareng-bareng.”</p><small>— Panitia Foto Angkatan XII</small></div><Link href="/event" className="event-teaser"><span className="eyebrow">NEXT UP</span><b>Hari kegiatan</b><strong>Registrasi mulai 06.00</strong><span>Dress code: kaos sekolah <ArrowRight size={16}/></span><div className="teaser-spark">✳</div></Link></section>
+    <section className="section-block" id="voting"><div className="section-heading"><h2>Konsep foto angkatan</h2><Link href="/event#voting" className="text-link">Lihat semua <ChevronRight size={17}/></Link></div><div className="concept-grid">{data.concepts.map((c,i)=><article className={`concept-card concept-${i}`} key={i}><div className="concept-cover"><span className="concept-letter">0{i+1}</span><span className="cover-symbol">{["✳","◒","✦"][i%3]}</span><span className="cover-tag">KONSEP {String.fromCharCode(65+i)}</span></div><div className="concept-body"><h3>{c.name}</h3><p>{c.desc}</p><div className="vote-line"><div className="vote-meter"><i style={{width:`${Math.min(100,(data.votes[String(i)]||0)/Math.max(1,totalVotes)*100)}%`}}/></div><span>{data.votes[String(i)]||0}</span></div><button className={`button vote-button ${vote===i?"chosen":""}`} onClick={()=>chooseVote(i)}>{vote===i?<><Check size={15}/> Pilihanmu</>:<>Pilih <ArrowRight size={15}/></>}</button></div></article>)}</div></section>
   </>;
 }
 
@@ -277,7 +278,7 @@ function Event({ data, setData, student, paid, savePayment, menuRecord, saveFood
   const [selectedMenu,setSelectedMenu]=useState(menuRecord.menu); const [selectedAllergies,setSelectedAllergies]=useState<string[]>(menuRecord.allergies); const [allergyNote,setAllergyNote]=useState(menuRecord.note); const [amount,setAmount]=useState("100000");
   const studentKey=student?.nama??"demo"; const [idea,setIdea]=useState("");
   const chooseVote=(idx:number)=>setData(d=>{const old=d.choices[studentKey];const votes={...d.votes};if(old!==undefined)votes[String(old)]=Math.max(0,(votes[String(old)]??1)-1);votes[String(idx)]=(votes[String(idx)]??0)+1;return{...d,votes,choices:{...d.choices,[studentKey]:idx}}});
-  return <><section className="page-intro"><span className="eyebrow">JADWAL & PERSIAPAN</span><h1>Event kita.</h1><p>Semua yang perlu kamu tahu sebelum hari kegiatan.</p></section><div className="event-tabs"><a href="#rundown"><Clock3/>Rundown</a><a href="#invoice"><CreditCard/>Pembayaran</a><a href="#consumption"><Utensils/>Konsumsi</a></div>
+  return <><div className="event-tabs"><a href="#rundown"><Clock3/>Rundown</a><a href="#invoice"><CreditCard/>Pembayaran</a><a href="#consumption"><Utensils/>Konsumsi</a></div>
     <section id="rundown" className="event-panel"><div className="panel-title"><span className="panel-icon lilac"><CalendarDays/></span><div><span className="eyebrow">HARI KEGIATAN</span><h2>Rundown acara</h2></div><span className="live-dot">JADWAL</span></div><FeatureLock open={data.gates.rundown.open} date={data.gates.rundown.date}/>{data.gates.rundown.open&&<div className="schedule">{data.events.map((ev,i)=><div className="schedule-row" key={i}><time>{ev.time}</time><i className="timeline-dot"/><div><b>{ev.title}</b><p>{ev.note}</p></div></div>)}</div>}</section>
     <section id="invoice" className="event-panel billing-panel"><div className="panel-title"><span className="panel-icon peach"><Wallet/></span><div><span className="eyebrow">IURAN FOTO ANGKATAN</span><h2>Tagihan & cicilan</h2></div><span className="bill-total">{rupiah(data.invoiceTotal)}</span></div><FeatureLock open={data.gates.payment.open} date={data.gates.payment.date}/>{data.gates.payment.open&&<><p className="helper-text">Cicilan fleksibel, total tagihan {rupiah(data.invoiceTotal)} per siswa.</p><div className="invoice-lines">{data.invoiceLines.map((line,i)=><div key={i}><span>{line.name}</span><b>{rupiah(line.amount)}</b></div>)}<div className="free-shirt"><span>Kaos merchandise untuk 100 pelunas pertama</span><b>GRATIS</b></div></div><div className="installment-dates">{data.dueDates.map((date,i)=><div key={i}><span><b>0{i+1}</b> Cicilan {i+1}</span><small>{date?new Date(`${date}T00:00:00`).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"}):"Jadwal segera menyusul"}</small></div>)}</div><div className="progress-wrap"><div><span>Sudah tercatat</span><b>{rupiah(paid)} <small>/ {rupiah(data.invoiceTotal)}</small></b></div><div className="progress-bar"><i style={{width:`${Math.min(100,paid/Math.max(1,data.invoiceTotal)*100)}%`}}/></div></div><div className="installment-actions"><select value={amount} onChange={e=>setAmount(e.target.value)}><option value="50000">Rp50.000</option><option value="100000">Rp100.000</option><option value="150000">Rp150.000</option><option value={String(data.invoiceTotal)}>{rupiah(data.invoiceTotal)} · lunas</option></select><button className="button primary" onClick={()=>savePayment(Number(amount))}>Catat pembayaran simulasi <ArrowRight size={16}/></button></div><div className="notice"><Wallet size={17}/><span>Simulasi saja. Pembayaran belum terhubung ke transfer atau payment gateway.</span></div></>}</section>
     <section id="consumption" className="event-panel"><div className="panel-title"><span className="panel-icon mint"><Utensils/></span><div><span className="eyebrow">PILIHAN KONSUMSI</span><h2>Menu kamu</h2></div><span className="live-dot">BISA DIUBAH</span></div><FeatureLock open={data.gates.menu.open} date={data.gates.menu.date}/>{data.gates.menu.open&&<><p className="helper-text">Pilih satu menu. Tandai alergi yang perlu panitia ketahui.</p><div className="menu-choices">{data.menus.map((m,i)=><label className={`menu-choice ${selectedMenu===i?"picked":""}`} key={i}><input type="radio" name="menu" checked={selectedMenu===i} onChange={()=>setSelectedMenu(i)}/><span className="menu-number">0{i+1}</span><span><b>{m.split(" · ")[0]}</b><small>{m}</small></span><i>{selectedMenu===i?<Check/>:null}</i></label>)}</div><div className="allergy-box"><b>Alergi atau pantangan</b><div className="allergy-grid">{allergens.map(a=><label key={a}><input type="checkbox" checked={selectedAllergies.includes(a)} onChange={e=>setSelectedAllergies(xs=>e.target.checked?[...xs,a]:xs.filter(x=>x!==a))}/>{a}</label>)}</div><input value={allergyNote} onChange={e=>setAllergyNote(e.target.value)} placeholder="Catatan tambahan (opsional)"/></div><button className="button primary" onClick={()=>saveFood(selectedMenu,selectedAllergies,allergyNote)}>Simpan pilihan <Check size={16}/></button></>}</section>
@@ -287,7 +288,16 @@ function Event({ data, setData, student, paid, savePayment, menuRecord, saveFood
 
 function Profile({ student, paid, data, setStudent }: {student:Student|null;paid:number;data:PortalData;setStudent:(s:Student|null)=>void}) {
   const initials=student?.nama.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()??"XII";
-  return <><section className="page-intro"><span className="eyebrow">AKUN SISWA</span><h1>Profile.</h1><p>Informasi keikutsertaan kamu di persiapan angkatan.</p></section><section className="profile-hero"><div className="profile-avatar">{initials}</div><div><span className="eyebrow">PESERTA FOTO ANGKATAN</span><h2>{student?.nama}</h2><p>{student?.kelas} · SMK PGRI 1 Giri Banyuwangi</p></div><span className="verified-tag"><Check size={14}/> Terdaftar</span></section><div className="profile-grid"><div className="profile-box"><span className="eyebrow">PROGRES IURAN</span><strong>{rupiah(paid)}</strong><span className="helper-text">dari total tagihan Rp300.000</span><div className="progress-bar"><i style={{width:`${Math.min(100,paid/300000*100)}%`}}/></div><Link href="/event#invoice" className="text-link">Lihat tagihan <ArrowRight size={15}/></Link></div><div className="profile-box"><span className="eyebrow">PILIHAN KONSUMSI</span><strong className="profile-menu">{data.menus[data.menusByStudent[student?.nama??"demo"]?.menu??0]?.split(" · ")[0]}</strong><span className="helper-text">{(data.menusByStudent[student?.nama??"demo"]?.allergies??[]).length?`Catatan alergi: ${data.menusByStudent[student?.nama??"demo"]?.allergies.join(", ")}`:"Belum ada alergi yang dicatat"}</span><Link href="/event#consumption" className="text-link">Ubah pilihan <ArrowRight size={15}/></Link></div></div><div className="profile-security"><ShieldCheck/><span><b>Data profil</b><small>NISN tidak disimpan pada perangkat dalam mode pratinjau.</small></span></div><Link href="/admin" className="admin-link"><ShieldCheck size={17}/> Akses backoffice panitia <ArrowRight size={15}/></Link><button className="button line signout" onClick={()=>setStudent(null)}>Keluar dari akun <ArrowDownRight size={16}/></button></>;
+  const menu = data.menus[data.menusByStudent[student?.nama??"demo"]?.menu??0]?.split(" · ")[0] ?? "Belum dipilih";
+  const allergyList = data.menusByStudent[student?.nama??"demo"]?.allergies ?? [];
+  return <section className="profile-simple">
+    <div className="profile-simple-head"><div className="profile-avatar">{initials}</div><div><h1>{student?.nama}</h1><p>{student?.kelas} · Angkatan XII</p></div></div>
+    <div className="profile-simple-list">
+      <Link href="/event#invoice" className="profile-simple-row"><span className="profile-row-icon lilac"><Wallet size={18}/></span><span><b>Tagihan foto angkatan</b><small>{rupiah(Math.max(0,data.invoiceTotal-paid))} tersisa</small></span><ChevronRight size={17}/></Link>
+      <Link href="/event#consumption" className="profile-simple-row"><span className="profile-row-icon mint"><Utensils size={18}/></span><span><b>Pilihan konsumsi</b><small>{menu}{allergyList.length?` · Alergi: ${allergyList.join(", ")}`:""}</small></span><ChevronRight size={17}/></Link>
+      <button type="button" className="profile-simple-row profile-signout" onClick={()=>setStudent(null)}><span className="profile-row-icon signout-icon"><ArrowDownRight size={18}/></span><span><b>Keluar akun</b></span><ChevronRight size={17}/></button>
+    </div>
+  </section>;
 }
 
 function Admin(props: {
@@ -342,4 +352,5 @@ function Admin(props: {
 
 function Metric({icon,label,value,foot}:{icon:React.ReactNode;label:string;value:string;foot:string}){return <div className="admin-metric"><span className="metric-icon">{icon}</span><small>{label}</small><b>{value}</b><span>{foot}</span></div>}
 function AdminHeading({eyebrow,title,sub}:{eyebrow:string;title:string;sub:string}){return <div className="admin-heading"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{sub}</p></div>}
+
 
