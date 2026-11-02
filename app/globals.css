@@ -168,4 +168,46 @@
   .profile-row-icon{width:36px;height:36px}
 }
 
+/* Admin dashboard: compact, readable controls with less dashboard copy. */
+.admin-welcome{padding:4px 0 16px;margin:3px 0 10px;border-bottom:1px solid #eceaf3;border-radius:0;background:transparent;color:var(--ink)}
+.admin-welcome .eyebrow{color:#77738c;font-size:10px;font-weight:700;letter-spacing:.08em}
+.admin-welcome h1{margin:5px 0 0;font-size:28px;font-weight:700;letter-spacing:-.04em;color:#24233b}
+.preview-chip{top:10px;right:0;padding:7px 10px;background:#eeebff;color:#5749d3;font-size:9px;font-weight:700;letter-spacing:.04em}
+.admin-brand{padding-bottom:20px}
+.admin-brand b{font-size:14px;font-weight:700;letter-spacing:0}
+.admin-brand small{font-size:10px;color:#c0bdd0}
+.admin-nav-title{font-size:9px;font-weight:700;letter-spacing:.1em}
+.admin-sidebar>button{font-size:12px;font-weight:600;min-height:43px}
+.admin-sidebar-foot .live-dot{font-size:9px;font-weight:700}
+.admin-sidebar-foot small,.admin-sidebar-foot a{font-size:10px}
+.admin-metric{gap:6px;padding:16px;border-radius:16px}
+.admin-metric small{font-size:10px;font-weight:600;color:#6f6b80}
+.admin-metric>b{font-size:18px;font-weight:700;line-height:1.25}
+.admin-metric>span:last-child{font-size:9px;font-weight:500}
+.admin-card-head h2{font-size:14px;font-weight:700}
+.admin-card-head>span{font-size:9px;font-weight:600}
+.gate-row b,.admin-gate-inline b{font-size:12px;font-weight:650}
+.gate-row small,.admin-gate-inline small{font-size:10px;line-height:1.4}
+.announcement-card p{font-size:11px;font-weight:550}
+.admin-content .admin-heading h1{font-size:27px;font-weight:700;letter-spacing:-.04em}
+.admin-content .admin-heading>.eyebrow{font-size:10px;font-weight:700;letter-spacing:.09em}
+.admin-content .admin-heading p{font-size:11px;font-weight:500}
+@media(max-width:800px){
+  .admin-content{padding:20px 14px 98px}
+  .admin-welcome{padding:3px 0 15px;margin-bottom:10px}
+  .admin-welcome h1{font-size:25px}
+  .admin-metrics{gap:9px;margin:10px 0 14px}
+  .admin-metric{gap:5px;padding:12px;border-radius:15px}
+  .admin-metric small{font-size:10px;line-height:1.35}
+  .admin-metric>b{font-size:16px;overflow-wrap:anywhere}
+  .metric-icon{width:32px;height:32px}
+  .admin-card{padding:15px;margin:10px 0;border-radius:17px}
+  .admin-card-head{margin-bottom:11px}
+  .admin-card-head h2{font-size:13px}
+  .gate-row,.admin-gate-inline{gap:9px;padding:12px 0}
+  .gate-row b,.admin-gate-inline b{font-size:11px}
+  .gate-row small,.admin-gate-inline small{font-size:9px}
+  .admin-columns{gap:8px}
+}
+
 
