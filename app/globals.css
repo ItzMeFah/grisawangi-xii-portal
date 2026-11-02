@@ -97,4 +97,75 @@
   .bottom-nav,.admin-mobile-nav{background:rgba(255,255,255,.96)}
 }
 
+/* Clearer student portal typography and quieter page headers. */
+.topbar{height:70px;border-bottom-color:#eeedf3}
+.wordmark b{font-size:14px;font-weight:700;letter-spacing:.055em;color:#24233b}
+.wordmark small{font-size:10px;font-weight:600;color:#77758c;letter-spacing:0}
+.top-actions{gap:0}
+.user-pill{gap:9px;font-size:12px;font-weight:650}
+.avatar{width:36px;height:36px;font-weight:700}
+.welcome-row{align-items:center;margin-bottom:18px}
+.welcome-row h1{font-size:clamp(25px,4vw,32px);font-weight:700;letter-spacing:-.045em}
+.feature-hero{min-height:245px}
+.hero-copy{padding:30px 34px}
+.hero-copy h2{font-weight:700;line-height:1.18}
+.hero-kicker{font-weight:700}
+.stat-card small,.stat-foot{font-size:10px;font-weight:600}
+.stat-card strong{font-weight:700}
+.section-heading{align-items:center}
+.section-heading h2{font-size:20px;font-weight:700;letter-spacing:-.03em}
+.concept-body h3{font-size:15px;font-weight:700}
+.concept-body p{font-size:10px;line-height:1.6}
+.concept-body .button{font-weight:700}
+.event-tabs{margin-top:2px;margin-bottom:18px}
+.event-tabs a{font-size:11px;font-weight:650;padding:10px 14px}
+.panel-title h2{font-size:18px;font-weight:700}
+.panel-title .eyebrow,.event-panel .eyebrow{font-weight:700}
+.schedule-row b,.menu-choice b,.event-votes b{font-weight:700}
+.profile-simple{max-width:650px;margin:20px auto;padding:clamp(17px,4vw,28px);border:1px solid #eeedf3;border-radius:24px;background:#fff;box-shadow:0 10px 32px #2824430a}
+.profile-simple-head{display:flex;align-items:center;gap:14px;padding:4px 2px 22px;border-bottom:1px solid #eeedf3}
+.profile-simple-head .profile-avatar{width:58px;height:58px;border:0;border-radius:19px;background:#eeebff;color:#5e51da;font-size:19px;font-weight:700}
+.profile-simple-head h1{margin:0;color:#24233b;font-size:18px;font-weight:700;line-height:1.35;letter-spacing:-.025em}
+.profile-simple-head p{margin:4px 0 0;color:#77758c;font-size:12px;font-weight:550}
+.profile-simple-list{display:grid;padding-top:7px}
+.profile-simple-row{min-width:0;display:flex;align-items:center;gap:12px;padding:15px 4px;border:0;border-bottom:1px solid #f0eff4;background:#fff;text-align:left;color:#302f45}
+.profile-simple-row:last-child{border-bottom:0}
+.profile-simple-row>span:nth-child(2){flex:1;min-width:0}
+.profile-simple-row b,.profile-simple-row small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-simple-row b{font-size:12px;font-weight:650}
+.profile-simple-row small{margin-top:4px;color:#7f7c90;font-size:10px;font-weight:500}
+.profile-simple-row>svg{flex:0 0 auto;color:#9a97a8}
+.profile-row-icon{width:39px;height:39px;display:grid;place-items:center;flex:0 0 auto;border-radius:13px}
+.profile-signout{width:100%;cursor:pointer}
+.profile-signout b{color:#b64c48}
+.signout-icon{background:#fff0ef;color:#bf5049}
+@media(max-width:600px){
+  .topbar{height:62px;padding:0 16px}
+  .wordmark{gap:9px}
+  .wordmark b{font-size:12px}
+  .wordmark small{font-size:9px}
+  .brand-mark{width:34px;height:34px}
+  .welcome-row{margin:1px 0 14px}
+  .welcome-row h1{font-size:24px}
+  .feature-hero{min-height:235px;border-radius:20px}
+  .hero-copy{max-width:82%;padding:21px 17px}
+  .hero-copy h2{font-size:25px;margin:14px 0 17px}
+  .hero-kicker{font-size:9px}
+  .stats-row{margin:13px 0 26px}
+  .stat-card small{font-size:10px}
+  .stat-card strong{font-size:15px}
+  .section-heading h2{font-size:17px}
+  .concept-body p{font-size:10px}
+  .event-tabs{margin-top:0;margin-bottom:14px}
+  .event-tabs a{font-size:10px;padding:9px 12px}
+  .profile-simple{margin:4px auto;padding:17px 15px;border-radius:21px}
+  .profile-simple-head{padding-bottom:18px}
+  .profile-simple-head h1{font-size:15px}
+  .profile-simple-head p{font-size:11px}
+  .profile-simple-row{gap:10px;padding:14px 2px}
+  .profile-simple-row b{font-size:11px}
+  .profile-simple-row small{font-size:9px}
+  .profile-row-icon{width:36px;height:36px}
+}
+
 
